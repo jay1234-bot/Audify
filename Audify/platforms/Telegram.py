@@ -15,6 +15,11 @@ from Audify.utils.formatters import (
 )
 
 
+# 🔥 NEW HELPER (IMPORTANT)
+def is_stream(file):
+    return isinstance(file, str) and file.startswith("http")
+
+
 class TeleAPI:
     def __init__(self):
         self.chars_limit = 4096
@@ -37,23 +42,20 @@ class TeleAPI:
         try:
             file_name = file.file_name
             if file_name is None:
-                file_name = "ᴛᴇʟᴇɢʀᴀᴍ ᴀᴜᴅɪᴏ" if audio else "ᴛᴇʟᴇɢʀᴀᴍ ᴠɪᴅᴇᴏ"
+                file_name = "Telegram Audio" if audio else "Telegram Video"
         except:
-            file_name = "ᴛᴇʟᴇɢʀᴀᴍ ᴀᴜᴅɪᴏ" if audio else "ᴛᴇʟᴇɢʀᴀᴍ ᴠɪᴅᴇᴏ"
+            file_name = "Telegram Audio" if audio else "Telegram Video"
         return file_name
-
-    async def get_duration(self, file):
-        try:
-            dur = seconds_to_min(file.duration)
-        except:
-            dur = "Unknown"
-        return dur
 
     async def get_duration(self, filex, file_path):
         try:
             dur = seconds_to_min(filex.duration)
         except:
             try:
+                # 🔥 FIX: stream case me duration skip
+                if is_stream(file_path):
+                    return "Unknown"
+
                 dur = await asyncio.get_event_loop().run_in_executor(
                     None, check_duration, file_path
                 )
@@ -79,16 +81,18 @@ class TeleAPI:
                     )
                 )
             except:
-                file_name = audio.file_unique_id + "." + "ogg"
+                file_name = audio.file_unique_id + ".ogg"
             file_name = os.path.join(os.path.realpath("downloads"), file_name)
+
         if video:
             try:
                 file_name = (
                     video.file_unique_id + "." + (video.file_name.split(".")[-1])
                 )
             except:
-                file_name = video.file_unique_id + "." + "mp4"
+                file_name = video.file_unique_id + ".mp4"
             file_name = os.path.join(os.path.realpath("downloads"), file_name)
+
         return file_name
 
     async def download(self, _, message, mystic, fname):
@@ -96,6 +100,12 @@ class TeleAPI:
         higher = [5, 10, 20, 40, 66, 80, 99]
         checker = [5, 10, 20, 40, 66, 80, 99]
         speed_counter = {}
+
+        # 🔥 FIX: stream hai toh download skip
+        if is_stream(fname):
+            print("⚡ Stream detected, skipping download")
+            return True
+
         if os.path.exists(fname):
             return True
 
@@ -106,27 +116,21 @@ class TeleAPI:
                 current_time = time.time()
                 start_time = speed_counter.get(message.id)
                 check_time = current_time - start_time
+
                 upl = InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton(
-                                text="ᴄᴀɴᴄᴇʟ",
-                                callback_data="stop_downloading",
-                            ),
-                        ]
-                    ]
+                    [[InlineKeyboardButton(text="CANCEL", callback_data="stop_downloading")]]
                 )
+
                 percentage = current * 100 / total
-                percentage = str(round(percentage, 2))
+                percentage = int(percentage)
                 speed = current / check_time
                 eta = int((total - current) / speed)
                 eta = get_readable_time(eta)
-                if not eta:
-                    eta = "0 sᴇᴄᴏɴᴅs"
+
                 total_size = convert_bytes(total)
                 completed_size = convert_bytes(current)
                 speed = convert_bytes(speed)
-                percentage = int((percentage.split("."))[0])
+
                 for counter in range(7):
                     low = int(lower[counter])
                     high = int(higher[counter])
@@ -135,14 +139,7 @@ class TeleAPI:
                         if high == check:
                             try:
                                 await mystic.edit_text(
-                                    text=_["tg_1"].format(
-                                        app.mention,
-                                        total_size,
-                                        completed_size,
-                                        percentage[:5],
-                                        speed,
-                                        eta,
-                                    ),
+                                    f"Downloading...\n{percentage}%\n{completed_size}/{total_size}\nSpeed: {speed}\nETA: {eta}",
                                     reply_markup=upl,
                                 )
                                 checker[counter] = 100
@@ -150,27 +147,30 @@ class TeleAPI:
                                 pass
 
             speed_counter[message.id] = time.time()
+
             try:
                 await app.download_media(
                     message.reply_to_message,
                     file_name=fname,
                     progress=progress,
                 )
-                try:
-                    elapsed = get_readable_time(
-                        int(int(time.time()) - int(speed_counter[message.id]))
-                    )
-                except:
-                    elapsed = "0 sᴇᴄᴏɴᴅs"
-                await mystic.edit_text(_["tg_2"].format(elapsed))
+
+                elapsed = get_readable_time(
+                    int(time.time() - speed_counter[message.id])
+                )
+
+                await mystic.edit_text(f"Downloaded in {elapsed}")
+
             except:
-                await mystic.edit_text(_["tg_3"])
+                await mystic.edit_text("Download Failed")
 
         task = asyncio.create_task(down_load())
         config.lyrical[mystic.id] = task
         await task
+
         verify = config.lyrical.get(mystic.id)
         if not verify:
             return False
+
         config.lyrical.pop(mystic.id)
         return True
