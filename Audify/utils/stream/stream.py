@@ -42,17 +42,17 @@ async def stream(
     if forceplay:
         await Audify.force_stop_stream(chat_id)
 
-    # 🔥 FILE EXTRACT
+    # 🔥 GET STREAM URL
     file_path = get_file(result)
+
+    if not file_path:
+        raise AssistantErr("❌ No stream URL found")
 
     # ================= YOUTUBE =================
     if streamtype == "youtube":
         title = result["title"]
         duration_min = result["duration_min"]
         thumbnail = result["thumb"]
-
-        if not file_path:
-            raise AssistantErr("❌ No stream URL found")
 
         if await is_active_chat(chat_id):
             await put_queue(
@@ -92,6 +92,7 @@ async def stream(
             )
 
             button = stream_markup(_, chat_id)
+
             await app.send_photo(
                 original_chat_id,
                 photo=thumbnail,
@@ -177,6 +178,7 @@ async def stream(
             )
 
             button = stream_markup(_, chat_id)
+
             await app.send_photo(
                 original_chat_id,
                 photo=config.STREAM_IMG_URL,
