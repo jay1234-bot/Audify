@@ -24,6 +24,20 @@ async def fetch_stream_url(link: str, video: bool = False):
 
 
 class YouTubeAPI:
+
+    # 🔥 FIXED (important)
+    async def url(self, message):
+        if message.reply_to_message:
+            if message.reply_to_message.text:
+                return message.reply_to_message.text
+
+        if message.text:
+            text = message.text.split(None, 1)
+            if len(text) > 1:
+                return text[1]
+
+        return None
+
     async def exists(self, link: str):
         return "youtube" in link or "youtu.be" in link
 
@@ -37,7 +51,7 @@ class YouTubeAPI:
         stream_url = await fetch_stream_url(yt_link)
 
         if not stream_url:
-            raise Exception("No stream URL")
+            raise Exception("❌ No stream URL")
 
         return {
             "title": result["title"],
@@ -45,8 +59,8 @@ class YouTubeAPI:
             "vidid": result["id"],
             "duration_min": result["duration"],
             "thumb": result["thumbnails"][0]["url"],
-            "path": stream_url,   # 🔥 IMPORTANT
-            "file": stream_url,   # 🔥 IMPORTANT
+            "path": stream_url,   # 🔥 REQUIRED
+            "file": stream_url,   # 🔥 REQUIRED
         }, result["id"]
 
     async def video(self, link: str):
