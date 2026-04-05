@@ -25,12 +25,12 @@ API_KEY = getenv("API_KEY", None)
 DOWNLOADS_DIR = "downloads"
 
 # Basic Bot Configs
-OWNER_USERNAME = getenv("OWNER_USERNAME", "Nikchil") #Replace With Yours ~
-BOT_USERNAME = getenv("BOT_USERNAME", "AudifyMusicBot") #Replace With Yours ~
-BOT_NAME = getenv("BOT_NAME", "Audify") #Replace With Yours ~
+OWNER_USERNAME = getenv("OWNER_USERNAME", "silentheartstealer") #Replace With Yours ~
+BOT_USERNAME = getenv("BOT_USERNAME", "BAKAxLovebot") #Replace With Yours ~
+BOT_NAME = getenv("BOT_NAME", "Baka") #Replace With Yours ~
 ASSUSERNAME = getenv("ASSUSERNAME", "AudifyAssistant") #Replace With Yours ~
-LOGGER_ID = int(getenv("LOGGER_ID", "-1002723963783")) #Replace With Yours ~
-BOT_LOGS_CHANNEL = int(getenv("BOT_LOGS_CHANNEL", "-1002731989493")) #Replace With Yours ~
+LOGGER_ID = int(getenv("LOGGER_ID", "-1003741732891")) #Replace With Yours ~
+BOT_LOGS_CHANNEL = int(getenv("BOT_LOGS_CHANNEL", "-1003741732891")) #Replace With Yours ~
 
 # MongoDB
 MONGO_DB_URI = getenv("MONGO_DB_URI", None)
@@ -64,9 +64,9 @@ GIT_TOKEN = getenv(
 )  # Fill this variable if your upstream repository is private
 
 # Support
-SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/GrayBots")
-SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/GrayBotSupport")
-SOURCE_CODE = getenv("SOURCE_CODE", "https://github.com/GrayBots/Audify")
+SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/wRaHPRw9FhY2E1")
+SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/+bLoLfHopoB4wNjk1")
+SOURCE_CODE = getenv("SOURCE_CODE", "https://t.me/silentheartstealer")
 PRIVACY_LINK = getenv("PRIVACY_LINK", "https://telegra.ph/Privacy-Policy-for-Audify-Music--Management-08-02-2")
 
 # Playlist
