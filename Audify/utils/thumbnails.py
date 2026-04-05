@@ -426,6 +426,7 @@ import math
 import traceback
 from pathlib import Path
 from py_yt import VideosSearch
+from Audify import app as _audify_app
 
 def wrap_text(draw, text, font, max_width):
     words = text.split()
@@ -687,10 +688,10 @@ async def gen_thumb(videoid: str):
         
         shadow_offset = 2
         draw.text((brand_x + shadow_offset, brand_y + shadow_offset), 
-                 app.username, fill=(0, 0, 0, 150), font=brand_font)
-        draw.text((brand_x, brand_y), app.username, fill=(255, 255, 255, 255), font=brand_font)
+                 _audify_app.username, fill=(0, 0, 0, 150), font=brand_font)
+        draw.text((brand_x, brand_y), _audify__audify_app.username, fill=(255, 255, 255, 255), font=brand_font)
         
-        brand_bbox = draw.textbbox((brand_x, brand_y), app.username, font=brand_font)
+        brand_bbox = draw.textbbox((brand_x, brand_y), _audify_app.username, font=brand_font)
         brand_w = brand_bbox[2] - brand_bbox[0]
         underline_y = brand_bbox[3] + 6
         draw.line([(brand_x, underline_y), (brand_x + brand_w, underline_y)], 
