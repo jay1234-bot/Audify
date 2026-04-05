@@ -3,6 +3,7 @@ import config
 from youtubesearchpython.__future__ import VideosSearch
 
 
+# 🔥 FINAL STREAM FETCH (JSON PARSE FIXED)
 async def fetch_stream_url(link: str, video: bool = False):
     api_url = config.API_URL
     api_key = config.API_KEY
@@ -14,9 +15,24 @@ async def fetch_stream_url(link: str, video: bool = False):
 
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(url, allow_redirects=True) as resp:
+            async with session.get(url) as resp:
                 if resp.status == 200:
-                    return str(resp.url)
+                    data = await resp.json()
+
+                    # 🔥 HANDLE MULTIPLE API FORMATS
+                    if video:
+                        return (
+                            data.get("video")
+                            or data.get("video_url")
+                            or data.get("url")
+                        )
+                    else:
+                        return (
+                            data.get("audio")
+                            or data.get("audio_url")
+                            or data.get("url")
+                        )
+
         except Exception as e:
             print("API ERROR:", e)
 
@@ -25,7 +41,7 @@ async def fetch_stream_url(link: str, video: bool = False):
 
 class YouTubeAPI:
 
-    # 🔥 FIXED (important)
+    # 🔥 FIXED (required by bot)
     async def url(self, message):
         if message.reply_to_message:
             if message.reply_to_message.text:
@@ -41,17 +57,18 @@ class YouTubeAPI:
     async def exists(self, link: str):
         return "youtube" in link or "youtu.be" in link
 
+    # 🔥 MAIN TRACK FUNCTION
     async def track(self, link: str):
         results = VideosSearch(link, limit=1)
         result = (await results.next())["result"][0]
 
         yt_link = result["link"]
 
-        # 🔥 STREAM FETCH
+        # 🔥 GET STREAM
         stream_url = await fetch_stream_url(yt_link)
 
         if not stream_url:
-            raise Exception("❌ No stream URL")
+            raise Exception("❌ No stream URL found")
 
         return {
             "title": result["title"],
@@ -63,6 +80,7 @@ class YouTubeAPI:
             "file": stream_url,   # 🔥 REQUIRED
         }, result["id"]
 
+    # 🔥 VIDEO STREAM
     async def video(self, link: str):
         stream = await fetch_stream_url(link, True)
         if stream:
