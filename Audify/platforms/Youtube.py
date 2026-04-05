@@ -1,93 +1,51 @@
 import asyncio
-import os
 import re
-import json
-import glob
-import random
-import logging
 import aiohttp
 import config
-import time
-import requests
-import yt_dlp
-from pathlib import Path
 from typing import Union
 from pyrogram.types import Message
 from pyrogram.enums import MessageEntityType
 from youtubesearchpython.__future__ import VideosSearch
-from Audify.utils.database import is_on_off
 from Audify.utils.formatters import time_to_seconds
 
-
-# ================== 🔥 FIXED STREAM FUNCTION ==================
+# ================= STREAM FUNCTION =================
 
 async def fetch_stream_url(link: str, video: bool = False) -> str | None:
     api_key = getattr(config, "API_KEY", None)
     api_url = getattr(config, "API_URL", None)
 
     if not api_key or not api_url:
-        raise RuntimeError("❌ API_KEY or API_URL missing in config.")
+        print("❌ API config missing")
+        return None
 
     if video:
         url = f"{api_url}/video-stream?token={api_key}&q={link}"
     else:
         url = f"{api_url}/stream?token={api_key}&q={link}"
 
-    print(f"🔗 Requesting ({'Video' if video else 'Audio'}): {url}")
+    print(f"🔗 Requesting: {url}")
 
-    timeout = aiohttp.ClientTimeout(total=15)
-
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        for attempt in range(1, 3):
-            try:
-                async with session.get(url, allow_redirects=True) as response:
-                    if response.status == 200:
-                        final_url = str(response.url)
-                        print(f"✅ Stream URL ready: {final_url}")
-                        return final_url
-            except Exception as e:
-                print(f"⚠️ Request error: {e}")
-
-            if attempt < 2:
-                await asyncio.sleep(0.5)
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url, allow_redirects=True) as resp:
+                if resp.status == 200:
+                    return str(resp.url)
+                else:
+                    print(f"❌ API Error: {resp.status}")
+        except Exception as e:
+            print(f"❌ Request failed: {e}")
 
     return None
 
 
-# ================== DOWNLOAD ==================
+# ================= DOWNLOAD (STREAM BASED) =================
 
-async def download_file(link: str, video: bool = False) -> str | None:
-    video_id = link.split("v=")[-1].split("&")[0]
-
-    folder = Path("downloads/video" if video else "downloads/audio")
-    folder.mkdir(parents=True, exist_ok=True)
-
-    ext = ".mp4" if video else ".m4a"
-    filepath = folder / f"{video_id}{ext}"
-
-    if filepath.exists():
-        return str(filepath)
-
-    stream_url = await fetch_stream_url(link, video)
-    if not stream_url:
-        return None
-
-    async with aiohttp.ClientSession() as session:
-        async with session.get(stream_url) as response:
-            if response.status != 200:
-                return None
-
-            with open(filepath, "wb") as f:
-                while True:
-                    chunk = await response.content.read(1024 * 1024)
-                    if not chunk:
-                        break
-                    f.write(chunk)
-
-    return str(filepath)
+async def download_file(link: str, video: bool = False):
+    stream = await fetch_stream_url(link, video)
+    return stream  # 🔥 always return stream
 
 
-# ================== YOUTUBE CLASS ==================
+# ================= YOUTUBE CLASS =================
 
 class YouTubeAPI:
     def __init__(self):
@@ -98,7 +56,9 @@ class YouTubeAPI:
         return bool(re.search(self.regex, link))
 
     async def url(self, message: Message):
-        return message.text if message.text else None
+        if message.text:
+            return message.text
+        return None
 
     async def details(self, link: str):
         results = VideosSearch(link, limit=1)
@@ -116,7 +76,7 @@ class YouTubeAPI:
         stream = await fetch_stream_url(link, video=True)
         if stream:
             return 1, stream
-        return 0, "Failed"
+        return 0, "Failed to fetch video"
 
     async def track(self, link: str):
         results = VideosSearch(link, limit=1)
@@ -131,5 +91,10 @@ class YouTubeAPI:
         }, result["id"]
 
     async def download(self, link: str, mystic, video=False):
-        file = await download_file(link, video)
-        return file, True
+        stream = await download_file(link, video)
+
+        if not stream:
+            return None, False
+
+        # 🔥 IMPORTANT FIX (no FileNotFoundError)
+        return stream, False
