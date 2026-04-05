@@ -2,35 +2,38 @@ import random
 import string
 
 from pyrogram import filters
-from pyrogram.types import InlineKeyboardMarkup, InputMediaPhoto, Message
+from pyrogram.types import Message
 from pytgcalls.exceptions import NoActiveGroupCall
 
 import config
-from Audify import Apple, Resso, SoundCloud, Spotify, Telegram, YouTube, app
-from Audify.core.call import Audify
-from Audify.utils import seconds_to_min, time_to_seconds
-from Audify.utils.channelplay import get_channeplayCB
-from Audify.utils.decorators.language import languageCB
+from Audify import YouTube, app
 from Audify.utils.decorators.play import PlayWrapper
-from Audify.utils.formatters import formats
-from Audify.utils.inline import (
-    botplaylist_markup,
-    livestream_markup,
-    playlist_markup,
-    slider_markup,
-    track_markup,
-)
 from Audify.utils.logger import play_logs
 from Audify.utils.stream.stream import stream
-from config import BANNED_USERS, lyrical
+from config import BANNED_USERS
 
 
-# 🔥 STREAM FIX HELPER
-def fix_stream(details):
-    if isinstance(details, dict):
-        path = details.get("path")
-        if path and str(path).startswith("http"):
-            details["file"] = path
+# 🔥 FINAL STREAM FIX (FORCE API)
+async def force_stream(details):
+    try:
+        # already stream hai
+        if details.get("file"):
+            return details
+
+        # 🔥 FORCE API CALL
+        stream_data = await YouTube.video(details["link"])
+
+        if isinstance(stream_data, tuple):
+            stream_url = stream_data[1]
+        else:
+            stream_url = stream_data
+
+        details["file"] = stream_url
+        details["path"] = stream_url
+
+    except Exception as e:
+        print("FORCE STREAM ERROR:", e)
+
     return details
 
 
@@ -61,14 +64,15 @@ async def play_commnd(
     user_id = message.from_user.id
     user_name = message.from_user.first_name
 
-    # ================= URL / YOUTUBE =================
+    # ================= URL =================
     if url:
         try:
-            details, track_id = await YouTube.track(url)
+            details, _ = await YouTube.track(url)
         except:
             return await mystic.edit_text(_["play_3"])
 
-        details = fix_stream(details)
+        # 🔥 FORCE STREAM FIX
+        details = await force_stream(details)
 
         try:
             await stream(
@@ -96,11 +100,12 @@ async def play_commnd(
     query = message.text.split(None, 1)[1]
 
     try:
-        details, track_id = await YouTube.track(query)
+        details, _ = await YouTube.track(query)
     except:
         return await mystic.edit_text(_["play_3"])
 
-    details = fix_stream(details)
+    # 🔥 FORCE STREAM FIX
+    details = await force_stream(details)
 
     try:
         await stream(
